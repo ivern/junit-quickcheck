@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import com.pholser.junit.quickcheck.MinimalCounterexampleHook;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.internal.GeometricDistribution;
 import com.pholser.junit.quickcheck.internal.ParameterTypeContext;
@@ -51,6 +52,7 @@ import org.slf4j.Logger;
 import ru.vyarus.java.generics.resolver.GenericsResolver;
 
 import static java.util.stream.Collectors.*;
+
 import static org.junit.Assert.*;
 
 class PropertyStatement extends Statement {
@@ -79,11 +81,13 @@ class PropertyStatement extends Statement {
     @Override public void evaluate() throws Throwable {
         Property marker = method.getAnnotation(Property.class);
         int trials = marker.trials();
+        MinimalCounterexampleHook hook = marker.onMinimalCounterexample().newInstance();
         ShrinkControl shrinkControl = new ShrinkControl(
             marker.shrink(),
             marker.maxShrinks(),
             marker.maxShrinkDepth(),
-            marker.maxShrinkTime());
+            marker.maxShrinkTime(),
+            hook::handle);
 
         List<PropertyParameterGenerationContext> params = parameters(trials);
 
@@ -101,13 +105,16 @@ class PropertyStatement extends Statement {
         ShrinkControl shrinkControl)
         throws Throwable {
 
-        Object[] args = argumentsFor(params);
-        property(params, args, shrinkControl).verify();
+        List<SeededValue> seededValues = argumentsFor(params);
+        Object[] args = seededValues.stream().map(v -> v.value).toArray();
+        long[] seeds = seededValues.stream().mapToLong(SeededValue::seed).toArray();
+        property(params, args, seeds, shrinkControl).verify();
     }
 
     private PropertyVerifier property(
         List<PropertyParameterGenerationContext> params,
         Object[] args,
+        long[] initialSeeds,
         ShrinkControl shrinkControl)
         throws InitializationError {
 
@@ -115,14 +122,17 @@ class PropertyStatement extends Statement {
             testClass,
             method,
             args,
+            initialSeeds,
             s -> ++successes,
             assumptionViolations::add,
-            e -> {
-                if (!shrinkControl.shouldShrink())
+            (e, action) -> {
+                if (!shrinkControl.shouldShrink()) {
+                    shrinkControl.onMinimalCounterexample().handle(args, action);
                     throw e;
+                }
 
                 try {
-                    shrink(params, args, shrinkControl, e);
+                    shrink(params, args, initialSeeds, shrinkControl, e);
                 } catch (AssertionError ex) {
                     throw ex;
                 } catch (Throwable ex) {
@@ -135,6 +145,7 @@ class PropertyStatement extends Statement {
     private void shrink(
         List<PropertyParameterGenerationContext> params,
         Object[] args,
+        long[] initialSeeds,
         ShrinkControl shrinkControl,
         AssertionError failure)
         throws Throwable {
@@ -145,8 +156,9 @@ class PropertyStatement extends Statement {
             failure,
             shrinkControl.maxShrinks(),
             shrinkControl.maxShrinkDepth(),
-            shrinkControl.maxShrinkTime())
-            .shrink(params, args);
+            shrinkControl.maxShrinkTime(),
+            shrinkControl.onMinimalCounterexample())
+            .shrink(params, args, initialSeeds);
     }
 
     private List<PropertyParameterGenerationContext> parameters(int trials) {
@@ -186,10 +198,27 @@ class PropertyStatement extends Statement {
         return exec.getDeclaringClass().getName() + '.' + exec.getName();
     }
 
-    private Object[] argumentsFor(List<PropertyParameterGenerationContext> params) {
+    private List<SeededValue> argumentsFor(List<PropertyParameterGenerationContext> params) {
         return params.stream()
-            .map(PropertyParameterGenerationContext::generate)
-            .collect(toList())
-            .toArray();
+            .map(p -> new SeededValue(p.generate(), p.effectiveSeed()))
+            .collect(toList());
+    }
+
+    private static class SeededValue {
+        private final Object value;
+        private final long seed;
+
+        SeededValue(Object value, long seed) {
+            this.value = value;
+            this.seed = seed;
+        }
+
+        Object value() {
+            return value;
+        }
+
+        long seed() {
+            return seed;
+        }
     }
 }

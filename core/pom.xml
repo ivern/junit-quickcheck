@@ -4,11 +4,11 @@
     <parent>
         <groupId>com.pholser</groupId>
         <artifactId>junit-quickcheck</artifactId>
-        <version>0.6-alpha-3-SNAPSHOT</version>
+        <version>0.7-SNAPSHOT</version>
     </parent>
 
     <artifactId>junit-quickcheck-core</artifactId>
-    <version>0.6-alpha-3-SNAPSHOT</version>
+    <version>0.7-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>junit-quickcheck-core</name>
     <description>Property-based testing, JUnit-style: core functionality</description>
@@ -18,11 +18,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.contrib</groupId>
-            <artifactId>junit-theories</artifactId>
-            <version>5.0-alpha-3</version>
         </dependency>
         <dependency>
             <groupId>org.javaruntype</groupId>

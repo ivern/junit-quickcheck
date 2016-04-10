@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -26,24 +26,25 @@
 package com.pholser.junit.quickcheck.generator;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
-import com.pholser.junit.quickcheck.internal.ParameterTypeContext;
 import com.pholser.junit.quickcheck.internal.ReflectionException;
-import com.pholser.junit.quickcheck.internal.generator.GeneratorRepository;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import org.javaruntype.type.TypeParameter;
 import org.javaruntype.type.Types;
 import org.javaruntype.type.WildcardTypeParameter;
 
-import static com.pholser.junit.quickcheck.internal.Reflection.*;
 import static java.util.Collections.*;
 import static java.util.stream.Collectors.*;
+
+import static com.pholser.junit.quickcheck.internal.Reflection.*;
 
 /**
  * Produces values for property parameters.
@@ -53,7 +54,7 @@ import static java.util.stream.Collectors.*;
 public abstract class Generator<T> implements Shrink<T> {
     private final List<Class<T>> types = new ArrayList<>();
 
-    private GeneratorRepository repo;
+    private Generators repo;
 
     /**
      * @param type class token for type of property parameter this generator is
@@ -119,9 +120,11 @@ public abstract class Generator<T> implements Shrink<T> {
      * participate} in shrinking the given value, and if so, they
      * {@linkplain #doShrink(SourceOfRandomness, Object) produce shrinks}.</p>
      */
-    public final List<T> shrink(SourceOfRandomness random, Object larger) {
-        if (!canShrink(larger))
-            throw new IllegalStateException(getClass() + " not capable of shrinking " + larger);
+    @Override public final List<T> shrink(SourceOfRandomness random, Object larger) {
+        if (!canShrink(larger)) {
+            throw new IllegalStateException(
+                getClass() + " not capable of shrinking " + larger);
+        }
 
         return doShrink(random, narrow(larger));
     }
@@ -249,34 +252,14 @@ public abstract class Generator<T> implements Shrink<T> {
      * the annotated type
      */
     public void configure(AnnotatedType annotatedType) {
-        List<Annotation> configs = configurationAnnotationsOn(annotatedType);
-
-        Map<Class<? extends Annotation>, Annotation> byType = new HashMap<>();
-        for (Annotation each : configs)
-            byType.put(each.annotationType(), each);
-
-        configure(byType);
+        configureStrict(collectConfigurationAnnotations(annotatedType));
     }
 
-    private void configure(Map<Class<? extends Annotation>, Annotation> byType) {
-        for (Map.Entry<Class<? extends Annotation>, Annotation> each : byType.entrySet())
-            configure(each.getKey(), each.getValue());
-    }
-
-    private void configure(Class<? extends Annotation> annotationType, Annotation configuration) {
-        Method configurer;
-
-        try {
-            configurer = findMethod(getClass(), "configure", annotationType);
-        } catch (ReflectionException ex) {
-            throw new GeneratorConfigurationException(
-                String.format("Generator %s does not understand configuration annotation %s",
-                    getClass().getName(),
-                    annotationType.getName()),
-                ex);
-        }
-
-        invoke(configurer, this, configuration);
+    /**
+     * @param element an annotated program element
+     */
+    public void configure(AnnotatedElement element) {
+        configureLenient(collectConfigurationAnnotations(element));
     }
 
     /**
@@ -284,24 +267,89 @@ public abstract class Generator<T> implements Shrink<T> {
      *
      * @param provided repository of available generators
      */
-    public void provideRepository(GeneratorRepository provided) {
+    public void provide(Generators provided) {
         repo = provided;
     }
 
-    Generator<?> generatorFor(ParameterTypeContext parameter) {
-        return repo.produceGenerator(parameter);
+    /**
+     * @return an access point for the available generators
+     */
+    protected Generators gen() {
+        return repo;
     }
 
     /**
      * Gives a list of the {@link GeneratorConfiguration} annotations present
-     * on the given type.
+     * on the given program element.
      *
-     * @param annotatedType an annotated type
-     * @return what configuration annotations are present on that type
+     * @param element an annotated program element
+     * @return what configuration annotations are present on that element
      */
-    protected static List<Annotation> configurationAnnotationsOn(AnnotatedType annotatedType) {
-        return allAnnotations(annotatedType).stream()
+    protected static List<Annotation> configurationAnnotationsOn(AnnotatedElement element) {
+        return allAnnotations(element).stream()
             .filter(a -> a.annotationType().isAnnotationPresent(GeneratorConfiguration.class))
             .collect(toList());
+    }
+
+    private Map<Class<? extends Annotation>, Annotation> collectConfigurationAnnotations(
+        AnnotatedElement element) {
+
+        if (element == null)
+            return emptyMap();
+
+        List<Annotation> configs = configurationAnnotationsOn(element);
+
+        Map<Class<? extends Annotation>, Annotation> byType = new HashMap<>();
+        for (Annotation each : configs)
+            byType.put(each.annotationType(), each);
+        return byType;
+    }
+
+    private void configureStrict(Map<Class<? extends Annotation>, Annotation> byType) {
+        for (Map.Entry<Class<? extends Annotation>, Annotation> each : byType.entrySet())
+            configureStrict(each.getKey(), each.getValue());
+    }
+
+    private void configureStrict(
+        Class<? extends Annotation> annotationType,
+        Annotation configuration) {
+
+        configure(annotationType, configuration, ex -> {
+            throw new GeneratorConfigurationException(
+                String.format(
+                    "Generator %s does not understand configuration annotation %s",
+                    getClass().getName(),
+                    annotationType.getName()),
+                ex);
+        });
+    }
+
+    private void configureLenient(Map<Class<? extends Annotation>, Annotation> byType) {
+        for (Map.Entry<Class<? extends Annotation>, Annotation> each : byType.entrySet())
+            configureLenient(each.getKey(), each.getValue());
+    }
+
+    private void configureLenient(
+        Class<? extends Annotation> annotationType,
+        Annotation configuration) {
+
+        configure(annotationType, configuration, ex -> {});
+    }
+
+    private void configure(
+        Class<? extends Annotation> annotationType,
+        Annotation configuration,
+        Consumer<ReflectionException> exceptionHandler) {
+
+        Method configurer = null;
+
+        try {
+            configurer = findMethod(getClass(), "configure", annotationType);
+        } catch (ReflectionException ex) {
+            exceptionHandler.accept(ex);
+        }
+
+        if (configurer != null)
+            invoke(configurer, this, configuration);
     }
 }

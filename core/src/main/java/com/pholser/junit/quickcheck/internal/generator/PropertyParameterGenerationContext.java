@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -64,15 +64,15 @@ public class PropertyParameterGenerationContext implements GenerationStatus {
     }
 
     private SourceOfRandomness initializeRandomness(
-        PropertyParameterContext parameter,
-        SourceOfRandomness random,
+        PropertyParameterContext p,
+        SourceOfRandomness r,
         Logger seedLog) {
 
-        if (parameter.fixedSeed())
-            random.setSeed(parameter.seed());
+        if (p.fixedSeed())
+            r.setSeed(p.seed());
 
-        seedLog.debug("Seed for parameter {} is {}", parameter.typeContext().name(), random.seed());
-        return random;
+        seedLog.debug("Seed for parameter {} is {}", p.typeContext().name(), r.seed());
+        return r;
     }
 
     public Object generate() {
@@ -122,6 +122,10 @@ public class PropertyParameterGenerationContext implements GenerationStatus {
 
     @Override public int attempts() {
         return successfulEvaluations + discards;
+    }
+
+    public long effectiveSeed() {
+        return random.seed();
     }
 
     public static class DiscardRatioExceededException extends RuntimeException {

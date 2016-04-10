@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,13 +25,12 @@
 
 package com.pholser.junit.quickcheck.generator.java.time;
 
+import java.time.ZoneId;
+
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
-import java.time.ZoneId;
-
-import static com.pholser.junit.quickcheck.internal.Items.choose;
 import static java.time.ZoneId.getAvailableZoneIds;
 
 /**
@@ -42,8 +41,7 @@ public class ZoneIdGenerator extends Generator<ZoneId> {
         super(ZoneId.class);
     }
 
-    @Override
-    public ZoneId generate(SourceOfRandomness random, GenerationStatus status) {
-        return ZoneId.of(choose(getAvailableZoneIds(), random));
+    @Override public ZoneId generate(SourceOfRandomness random, GenerationStatus status) {
+        return ZoneId.of(random.choose(getAvailableZoneIds()));
     }
 }

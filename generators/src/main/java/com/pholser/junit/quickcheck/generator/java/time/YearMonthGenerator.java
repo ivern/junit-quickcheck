@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,17 +25,16 @@
 
 package com.pholser.junit.quickcheck.generator.java.time;
 
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
-import java.time.Year;
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-
-import static com.pholser.junit.quickcheck.internal.Reflection.defaultValueOf;
+import static com.pholser.junit.quickcheck.internal.Reflection.*;
 
 /**
  * Produces values of type {@link YearMonth}.
@@ -62,31 +61,26 @@ public class YearMonthGenerator extends Generator<YearMonth> {
      * interpret the range's endpoints}.</p>
      *
      * @param range annotation that gives the range's constraints
-     * @throws IllegalArgumentException if the range's values cannot be
-     *                                  converted to {@code YearMonth}
      */
     public void configure(InRange range) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(range.format());
 
-        try {
-            if (!defaultValueOf(InRange.class, "min").equals(range.min()))
-                min = YearMonth.parse(range.min(), formatter);
-            if (!defaultValueOf(InRange.class, "max").equals(range.max()))
-                max = YearMonth.parse(range.max(), formatter);
-        } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException(e);
-        }
+        if (!defaultValueOf(InRange.class, "min").equals(range.min()))
+            min = YearMonth.parse(range.min(), formatter);
+        if (!defaultValueOf(InRange.class, "max").equals(range.max()))
+            max = YearMonth.parse(range.max(), formatter);
 
         if (min.compareTo(max) > 0)
             throw new IllegalArgumentException(String.format("bad range, %s > %s", range.min(), range.max()));
     }
 
-    @Override
-    public YearMonth generate(SourceOfRandomness random, GenerationStatus status) {
+    @Override public YearMonth generate(SourceOfRandomness random, GenerationStatus status) {
         long generated = random.nextLong(
             min.getYear() * 12L + min.getMonthValue() - 1,
             max.getYear() * 12L + max.getMonthValue() - 1);
 
-        return YearMonth.of((int) (generated / 12), (int) Math.abs(generated % 12) + 1);
+        return YearMonth.of(
+            (int) (generated / 12),
+            (int) Math.abs(generated % 12) + 1);
     }
 }

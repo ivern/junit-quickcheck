@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -35,9 +35,10 @@ import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.internal.Lists;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
+import static java.util.stream.StreamSupport.*;
+
 import static com.pholser.junit.quickcheck.internal.Lists.*;
 import static com.pholser.junit.quickcheck.internal.Sequences.*;
-import static java.util.stream.StreamSupport.*;
 
 /**
  * <p>Base class for generators of values of type {@link String}.</p>

@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -34,9 +34,10 @@ import java.util.stream.Collectors;
 
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
-import static com.pholser.junit.quickcheck.internal.Sequences.*;
 import static java.util.Collections.*;
 import static java.util.stream.StreamSupport.*;
+
+import static com.pholser.junit.quickcheck.internal.Sequences.*;
 
 /**
  * Base class for generators of integral types, such as {@code int} and

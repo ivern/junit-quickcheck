@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -57,8 +57,8 @@ public @interface When {
 
     /**
      * @return a value to be used as the initial seed for the random value
-     * generator. Not specifying a value causes the seed to be chosen in the
-     * usual JDK way.
+     * generator. Not specifying a value causes the seed to be chosen
+     * randomly.
      */
     long seed() default 0;
 }

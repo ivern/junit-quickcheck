@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -36,15 +36,13 @@ import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
 public class MonthPropertyParameterTypesTest {
-    @Test
-    public void month() {
-        assertThat(testResult(MonthTheory.class), isSuccessful());
+    @Test public void month() {
+        assertThat(testResult(Months.class), isSuccessful());
     }
 
     @RunWith(JUnitQuickcheck.class)
-    public static class MonthTheory {
-        @Property
-        public void shouldHold(Month d) {
+    public static class Months {
+        @Property public void shouldHold(Month m) {
         }
     }
 }

@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -29,11 +29,11 @@ import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.pholser.junit.quickcheck.internal.generator.GeneratorRepository;
 import org.javaruntype.type.TypeParameter;
 
-import static com.pholser.junit.quickcheck.internal.Reflection.*;
 import static java.util.Collections.*;
+
+import static com.pholser.junit.quickcheck.internal.Reflection.*;
 
 /**
  * Produces values for property parameters of types that have parameterizations
@@ -75,11 +75,11 @@ public abstract class ComponentizedGenerator<T> extends Generator<T> {
         return numberOfNeededComponents() == typeParameters.size();
     }
 
-    @Override public void provideRepository(GeneratorRepository provided) {
-        super.provideRepository(provided);
+    @Override public void provide(Generators provided) {
+        super.provide(provided);
 
         for (Generator<?> each : components)
-            each.provideRepository(provided);
+            each.provide(provided);
     }
 
     @Override public void configure(AnnotatedType annotatedType) {

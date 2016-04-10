@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -29,8 +29,12 @@ import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Random;
 
+import static java.util.Arrays.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 import static org.junit.runners.MethodSorters.*;
@@ -195,5 +199,64 @@ public class GeneratingRandomValuesTest {
     @Test public void nextBytes() {
         assertArrayEquals(new byte[] { 115 }, source.nextBytes(1));
     }
-}
 
+    @Test(expected = IllegalArgumentException.class)
+    public void nextInstantWithBackwardsRange() {
+        Instant now = Instant.now();
+
+        source.nextInstant(now, now.minusNanos(1));
+    }
+
+    @Test public void nextInstantWithIdenticalMinAndMax() {
+        Instant now = Instant.now();
+
+        assertEquals(now, source.nextInstant(now, now));
+    }
+
+    @Test public void nextInstantInRange() {
+        Instant now = Instant.now();
+        Instant later = now.plusNanos(3);
+
+        Instant value = source.nextInstant(now, later);
+
+        assertThat(
+            value,
+            allOf(
+                greaterThanOrEqualTo(now),
+                lessThanOrEqualTo(later)));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void nextDurationWithBackwardsRange() {
+        source.nextDuration(
+            Duration.of(1, ChronoUnit.NANOS),
+            Duration.of(0, ChronoUnit.NANOS));
+    }
+
+    @Test public void nextDurationWithIdenticalMinAndMax() {
+        Duration d = Duration.of(1, ChronoUnit.NANOS);
+
+        assertEquals(d, source.nextDuration(d, d));
+    }
+
+    @Test public void nextDurationInRange() {
+        Duration min = Duration.of(1, ChronoUnit.NANOS);
+        Duration max = Duration.of(5, ChronoUnit.NANOS);
+
+        Duration value = source.nextDuration(min, max);
+
+        assertThat(
+            value,
+            allOf(
+                greaterThanOrEqualTo(min),
+                lessThanOrEqualTo(max)));
+    }
+
+    @Test public void samplingArray() {
+        assertEquals("c", source.choose(new String[] { "a", "b", "c", "d" }));
+    }
+
+    @Test public void samplingCollection() {
+        assertEquals(Integer.valueOf(-1), source.choose(asList(-1, -2, -3, -4, -5)));
+    }
+}

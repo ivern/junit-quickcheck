@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,18 +25,20 @@
 
 package com.pholser.junit.quickcheck.internal.generator;
 
-import com.pholser.junit.quickcheck.generator.GenerationStatus;
-import com.pholser.junit.quickcheck.generator.Generator;
-import com.pholser.junit.quickcheck.generator.GeneratorConfigurationException;
-import com.pholser.junit.quickcheck.internal.Items;
-import com.pholser.junit.quickcheck.internal.Weighted;
-import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.pholser.junit.quickcheck.generator.GenerationStatus;
+import com.pholser.junit.quickcheck.generator.Generator;
+import com.pholser.junit.quickcheck.generator.GeneratorConfigurationException;
+import com.pholser.junit.quickcheck.generator.Generators;
+import com.pholser.junit.quickcheck.internal.Items;
+import com.pholser.junit.quickcheck.internal.Weighted;
+import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 public class CompositeGenerator extends Generator<Object> {
     private final List<Weighted<Generator<?>>> composed;
@@ -76,15 +78,17 @@ public class CompositeGenerator extends Generator<Object> {
         return composed.size();
     }
 
-    @Override public void provideRepository(GeneratorRepository provided) {
-        super.provideRepository(provided);
+    @Override public void provide(Generators provided) {
+        super.provide(provided);
 
         for (Weighted<Generator<?>> each : composed)
-            each.item.provideRepository(provided);
+            each.item.provide(provided);
     }
 
     @Override public void configure(AnnotatedType annotatedType) {
-        for (Iterator<Weighted<Generator<?>>> it = composed.iterator(); it.hasNext();) {
+        List<Weighted<Generator<?>>> candidates = new ArrayList<>(composed);
+
+        for (Iterator<Weighted<Generator<?>>> it = candidates.iterator(); it.hasNext();) {
             try {
                 it.next().item.configure(annotatedType);
             } catch (GeneratorConfigurationException e) {
@@ -92,18 +96,49 @@ public class CompositeGenerator extends Generator<Object> {
             }
         }
 
-        if (composed.isEmpty()) {
-            throw new GeneratorConfigurationException(
-                String.format(
-                    "No generator that can produce values of type %s"
-                        + " understands all of the configuration annotations %s",
-                    annotatedType.getType().getTypeName(),
-                    configurationAnnotationNames(annotatedType)));
-        }
+        installCandidates(candidates, annotatedType);
     }
 
-    private static List<String> configurationAnnotationNames(AnnotatedType annotatedType) {
-        return configurationAnnotationsOn(annotatedType).stream()
+    @Override public void configure(AnnotatedElement element) {
+        List<Weighted<Generator<?>>> candidates = new ArrayList<>(composed);
+
+        for (Iterator<Weighted<Generator<?>>> it = candidates.iterator(); it.hasNext();) {
+            try {
+                it.next().item.configure(element);
+            } catch (GeneratorConfigurationException e) {
+                it.remove();
+            }
+        }
+
+        installCandidates(candidates, element);
+    }
+
+    private void installCandidates(
+        List<Weighted<Generator<?>>> candidates,
+        AnnotatedElement element) {
+
+        if (candidates.isEmpty()) {
+            throw new GeneratorConfigurationException(
+                String.format(
+                    "None of the candidate generators %s"
+                        + " understands all of the configuration annotations %s",
+                    candidateGeneratorDescriptions(),
+                    configurationAnnotationNames(element)));
+        }
+
+        composed.clear();
+        composed.addAll(candidates);
+    }
+
+    private String candidateGeneratorDescriptions() {
+        return composed.stream()
+            .map(w -> w.item.getClass().getName())
+            .collect(Collectors.toList())
+            .toString();
+    }
+
+    private static List<String> configurationAnnotationNames(AnnotatedElement element) {
+        return configurationAnnotationsOn(element).stream()
             .map(a -> a.annotationType().getName())
             .collect(Collectors.toList());
     }

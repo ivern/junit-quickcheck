@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -35,11 +35,6 @@ import static com.pholser.junit.quickcheck.internal.Reflection.*;
 public final class Annotations {
     private Annotations() {
         throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    public static int defaultSampleSize() throws Exception {
-        return (Integer) ForAll.class.getMethod("sampleSize").getDefaultValue();
     }
 
     public static int defaultPropertyTrialCount() throws Exception {

@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -27,13 +27,10 @@ package com.pholser.junit.quickcheck.generator.java.util;
 
 import java.util.TimeZone;
 
-import static java.util.Arrays.*;
-
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
-import static com.pholser.junit.quickcheck.internal.Items.*;
 import static java.util.TimeZone.*;
 
 /**
@@ -45,6 +42,6 @@ public class TimeZoneGenerator extends Generator<TimeZone> {
     }
 
     @Override public TimeZone generate(SourceOfRandomness random, GenerationStatus status) {
-        return getTimeZone(choose(asList(getAvailableIDs()), random));
+        return getTimeZone(random.choose(getAvailableIDs()));
     }
 }

@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -29,7 +29,6 @@ import java.util.function.ToIntBiFunction;
 
 import com.pholser.junit.quickcheck.generator.ComponentizedGenerator;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
-import com.pholser.junit.quickcheck.generator.java.lang.IntegerGenerator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 import static com.pholser.junit.quickcheck.generator.Lambdas.*;
@@ -41,15 +40,13 @@ import static com.pholser.junit.quickcheck.generator.Lambdas.*;
  * @param <U> type of second parameter of produced function
  */
 public class ToIntBiFunctionGenerator<T, U> extends ComponentizedGenerator<ToIntBiFunction> {
-    private final IntegerGenerator integerGenerator = new IntegerGenerator();
-
     public ToIntBiFunctionGenerator() {
         super(ToIntBiFunction.class);
     }
 
     @SuppressWarnings("unchecked")
     @Override public ToIntBiFunction<T, U> generate(SourceOfRandomness random, GenerationStatus status) {
-        return makeLambda(ToIntBiFunction.class, integerGenerator, status);
+        return makeLambda(ToIntBiFunction.class, gen().type(int.class), status);
     }
 
     @Override public int numberOfNeededComponents() {

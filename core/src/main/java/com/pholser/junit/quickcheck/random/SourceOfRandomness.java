@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,15 +25,15 @@
 
 package com.pholser.junit.quickcheck.random;
 
-import com.pholser.junit.quickcheck.internal.Ranges;
-
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Random;
 
-import static com.pholser.junit.quickcheck.internal.Ranges.checkRange;
-import static com.pholser.junit.quickcheck.internal.Ranges.choose;
+import com.pholser.junit.quickcheck.internal.Ranges;
+
+import static com.pholser.junit.quickcheck.internal.Ranges.*;
 
 /**
  * A source of randomness, fed to
@@ -41,7 +41,7 @@ import static com.pholser.junit.quickcheck.internal.Ranges.choose;
  * can produce random values for property parameters.
  */
 public class SourceOfRandomness {
-    private final static BigInteger NANOS_PER_SECOND = BigInteger.valueOf(1_000_000_000);
+    private static final BigInteger NANOS_PER_SECOND = BigInteger.valueOf(1_000_000_000);
 
     private final Random delegate;
 
@@ -241,7 +241,7 @@ public class SourceOfRandomness {
         if (comparison == 0)
             return min;
 
-        return choose(this, BigInteger.valueOf(min), BigInteger.valueOf(max)).longValue();
+        return Ranges.choose(this, BigInteger.valueOf(min), BigInteger.valueOf(max)).longValue();
     }
 
     /**
@@ -277,7 +277,15 @@ public class SourceOfRandomness {
      * @return a random value
      */
     public Instant nextInstant(Instant min, Instant max) {
-        long[] next = nextSecondsAndNanos(min.getEpochSecond(), min.getNano(), max.getEpochSecond(), max.getNano());
+        int comparison = checkRange(Ranges.Type.STRING, min, max);
+        if (comparison == 0)
+            return min;
+
+        long[] next = nextSecondsAndNanos(
+            min.getEpochSecond(),
+            min.getNano(),
+            max.getEpochSecond(),
+            max.getNano());
 
         return Instant.ofEpochSecond(next[0], next[1]);
     }
@@ -291,12 +299,49 @@ public class SourceOfRandomness {
      * @return a random value
      */
     public Duration nextDuration(Duration min, Duration max) {
-        long[] next = nextSecondsAndNanos(min.getSeconds(), min.getNano(), max.getSeconds(), max.getNano());
+        int comparison = checkRange(Ranges.Type.STRING, min, max);
+        if (comparison == 0)
+            return min;
+
+        long[] next = nextSecondsAndNanos(
+            min.getSeconds(),
+            min.getNano(),
+            max.getSeconds(),
+            max.getNano());
 
         return Duration.ofSeconds(next[0], next[1]);
     }
 
-    private long[] nextSecondsAndNanos(long minSeconds, long minNanos, long maxSeconds, long maxNanos) {
+    /**
+     * Gives a random element of the given collection.
+     *
+     * @param <T> type of items in the collection
+     * @param items a collection
+     * @return a randomly chosen element from the collection
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T choose(Collection<T> items) {
+        Object[] array = items.toArray(new Object[items.size()]);
+        return (T) array[nextInt(array.length)];
+    }
+
+    /**
+     * Gives a random element of the given array.
+     *
+     * @param <T> type of items in the array
+     * @param items an array
+     * @return a randomly chosen element from the array
+     */
+    public <T> T choose(T[] items) {
+        return items[nextInt(items.length)];
+    }
+
+    private long[] nextSecondsAndNanos(
+        long minSeconds,
+        long minNanos,
+        long maxSeconds,
+        long maxNanos) {
+
         BigInteger nanoMin = BigInteger.valueOf(minSeconds)
             .multiply(NANOS_PER_SECOND)
             .add(BigInteger.valueOf(minNanos));
@@ -304,8 +349,9 @@ public class SourceOfRandomness {
             .multiply(NANOS_PER_SECOND)
             .add(BigInteger.valueOf(maxNanos));
 
-        BigInteger[] generated = choose(this, nanoMin, nanoMax).divideAndRemainder(NANOS_PER_SECOND);
+        BigInteger[] generated = Ranges.choose(this, nanoMin, nanoMax)
+            .divideAndRemainder(NANOS_PER_SECOND);
 
-        return new long[]{generated[0].longValue(), generated[1].longValue()};
+        return new long[] { generated[0].longValue(), generated[1].longValue() };
     }
 }

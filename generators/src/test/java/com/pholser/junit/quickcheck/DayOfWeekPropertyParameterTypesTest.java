@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -36,15 +36,13 @@ import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
 public class DayOfWeekPropertyParameterTypesTest {
-    @Test
-    public void dayOfWeek() {
-        assertThat(testResult(DayOfWeekTheory.class), isSuccessful());
+    @Test public void dayOfWeek() {
+        assertThat(testResult(DaysOfWeek.class), isSuccessful());
     }
 
     @RunWith(JUnitQuickcheck.class)
-    public static class DayOfWeekTheory {
-        @Property
-        public void shouldHold(DayOfWeek d) {
+    public static class DaysOfWeek {
+        @Property public void shouldHold(DayOfWeek d) {
         }
     }
 }
