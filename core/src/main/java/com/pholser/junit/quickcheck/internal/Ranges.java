@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -35,7 +35,8 @@ public final class Ranges {
     public enum Type {
         CHARACTER("c"),
         INTEGRAL("d"),
-        FLOAT("f");
+        FLOAT("f"),
+        STRING("s");
 
         private final String pattern;
 

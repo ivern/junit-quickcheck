@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,16 +25,12 @@
 
 package com.pholser.junit.quickcheck.generator;
 
-import com.pholser.junit.quickcheck.internal.ParameterTypeContext;
-import com.pholser.junit.quickcheck.internal.generator.GeneratorRepository;
-import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-import org.junit.contrib.theories.Theory;
-
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ServiceLoader;
+
+import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 import static com.pholser.junit.quickcheck.internal.Reflection.*;
 
@@ -48,15 +44,12 @@ import static com.pholser.junit.quickcheck.internal.Reflection.*;
  * accessible zero-arg constructor.</p>
  *
  * <p>If a field is marked with an annotation that influences the generation of
- * a given kind of value, it will be applied to the generation of values for
- * that field.</p>
+ * a given kind of value, that annotation will be applied to the generation of
+ * values for that field.</p>
  *
  * <p>This generator is intended to be used with
  * {@link com.pholser.junit.quickcheck.From}, and not to be available via the
- * {@link ServiceLoader} mechanism.</p>
- *
- * @deprecated This was introduced to alleviate the difficulties of old
- * {@link Theory} methods with many parameters, and will likely go away.
+ * {@link java.util.ServiceLoader} mechanism.</p>
  *
  * @param <T> the type of objects generated
  */
@@ -79,10 +72,8 @@ public class Fields<T> extends Generator<T> {
         Class<T> type = types().get(0);
         Object generated = instantiate(type);
 
-        for (Field each : fields) {
-            ParameterTypeContext parameter = parameterContext(each);
-            setField(each, generated, generatorFor(parameter).generate(random, status), true);
-        }
+        for (Field each : fields)
+            setField(each, generated, gen().field(each).generate(random, status), true);
 
         return type.cast(generated);
     }
@@ -91,12 +82,12 @@ public class Fields<T> extends Generator<T> {
         return false;
     }
 
-    @Override public void provideRepository(GeneratorRepository provided) {
-        super.provideRepository(provided);
+    @Override public void provide(Generators provided) {
+        super.provide(provided);
 
         fieldGenerators.clear();
         for (Field each : fields)
-            fieldGenerators.add(generatorFor(parameterContext(each)));
+            fieldGenerators.add(gen().field(each));
     }
 
     @Override public void configure(AnnotatedType annotatedType) {
@@ -104,13 +95,5 @@ public class Fields<T> extends Generator<T> {
 
         for (int i = 0; i < fields.size(); ++i)
             fieldGenerators.get(i).configure(fields.get(i).getAnnotatedType());
-    }
-
-    private ParameterTypeContext parameterContext(Field field) {
-        return new ParameterTypeContext(
-            field.getName(),
-            field.getAnnotatedType(),
-            field.getDeclaringClass().getName())
-            .annotate(field);
     }
 }

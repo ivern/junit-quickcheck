@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -29,7 +29,6 @@ import java.util.function.ToLongFunction;
 
 import com.pholser.junit.quickcheck.generator.ComponentizedGenerator;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
-import com.pholser.junit.quickcheck.generator.java.lang.LongGenerator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 import static com.pholser.junit.quickcheck.generator.Lambdas.*;
@@ -40,15 +39,13 @@ import static com.pholser.junit.quickcheck.generator.Lambdas.*;
  * @param <T> type of parameter of produced function
  */
 public class ToLongFunctionGenerator<T> extends ComponentizedGenerator<ToLongFunction> {
-    private final LongGenerator longGenerator = new LongGenerator();
-
     public ToLongFunctionGenerator() {
         super(ToLongFunction.class);
     }
 
     @SuppressWarnings("unchecked")
     @Override public ToLongFunction<T> generate(SourceOfRandomness random, GenerationStatus status) {
-        return makeLambda(ToLongFunction.class, longGenerator, status);
+        return makeLambda(ToLongFunction.class, gen().type(long.class), status);
     }
 
     @Override public int numberOfNeededComponents() {

@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -40,12 +40,13 @@ import com.pholser.junit.quickcheck.generator.Shrink;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
+import static java.util.stream.StreamSupport.*;
+
 import static com.pholser.junit.quickcheck.internal.Lists.*;
-import static com.pholser.junit.quickcheck.internal.Ranges.Type.*;
 import static com.pholser.junit.quickcheck.internal.Ranges.*;
+import static com.pholser.junit.quickcheck.internal.Ranges.Type.*;
 import static com.pholser.junit.quickcheck.internal.Reflection.*;
 import static com.pholser.junit.quickcheck.internal.Sequences.*;
-import static java.util.stream.StreamSupport.*;
 
 /**
  * <p>Base class for generators of {@link Map}s.</p>
@@ -72,11 +73,11 @@ public abstract class MapGenerator<T extends Map> extends ComponentizedGenerator
      * <p>Note that maps disallow duplicate keys, so the number of pairs added
      * may not be equal to the map's {@link Map#size()}.</p>
      *
-     * @param sizeRange annotation that gives the size constraints
+     * @param size annotation that gives the size constraints
      */
-    public void configure(Size sizeRange) {
-        this.sizeRange = sizeRange;
-        checkRange(INTEGRAL, sizeRange.min(), sizeRange.max());
+    public void configure(Size size) {
+        this.sizeRange = size;
+        checkRange(INTEGRAL, size.min(), size.max());
     }
 
     @SuppressWarnings("unchecked")

@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -179,13 +179,24 @@ public final class Reflection {
         }
     }
 
+    public static Field findField(Class<?> type, String fieldName) {
+        try {
+            return type.getDeclaredField(fieldName);
+        } catch (NoSuchFieldException ex) {
+            throw reflectionException(ex);
+        }
+    }
+
     public static List<Field> allDeclaredFieldsOf(Class<?> type) {
         List<Field> allFields = new ArrayList<>();
 
         for (Class<?> c = type; c != null; c = c.getSuperclass())
             Collections.addAll(allFields, c.getDeclaredFields());
 
-        return allFields.stream().filter(f -> !f.isSynthetic()).collect(toList());
+        List<Field> results = allFields.stream().filter(f -> ! f.isSynthetic()).collect(toList());
+        results.forEach(f -> f.setAccessible(true));
+
+        return results;
     }
 
     public static void setField(

@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,17 +25,27 @@
 
 package com.pholser.junit.quickcheck.internal;
 
+import com.pholser.junit.quickcheck.MinimalCounterexampleHook;
+
 public class ShrinkControl {
     private final boolean shouldShrink;
     private final int maxShrinks;
     private final int maxShrinkDepth;
     private final int maxShrinkTime;
+    private final MinimalCounterexampleHook onMinimalCounterexample;
 
-    public ShrinkControl(boolean shouldShrink, int maxShrinks, int maxShrinkDepth, int maxShrinkTime) {
+    public ShrinkControl(
+        boolean shouldShrink,
+        int maxShrinks,
+        int maxShrinkDepth,
+        int maxShrinkTime,
+        MinimalCounterexampleHook onMinimalCounterexample) {
+
         this.shouldShrink = shouldShrink;
         this.maxShrinks = maxShrinks;
         this.maxShrinkDepth = maxShrinkDepth;
         this.maxShrinkTime = maxShrinkTime;
+        this.onMinimalCounterexample = onMinimalCounterexample;
     }
 
     public boolean shouldShrink() {
@@ -52,5 +62,9 @@ public class ShrinkControl {
 
     public int maxShrinkTime() {
         return maxShrinkTime;
+    }
+
+    public MinimalCounterexampleHook onMinimalCounterexample() {
+        return onMinimalCounterexample;
     }
 }

@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -26,7 +26,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -87,8 +87,6 @@ public class DateGenerator extends Generator<Date> {
      * interpret the range's endpoints}.</p>
      *
      * @param range annotation that gives the range's constraints
-     * @throws IllegalArgumentException if the range's values cannot be
-     * converted to {@code Date}
      */
     public void configure(InRange range) {
         SimpleDateFormat formatter = new SimpleDateFormat(range.format());

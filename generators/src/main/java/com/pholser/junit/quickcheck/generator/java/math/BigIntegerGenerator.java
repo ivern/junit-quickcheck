@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -36,10 +36,11 @@ import com.pholser.junit.quickcheck.generator.internal.Comparables;
 import com.pholser.junit.quickcheck.internal.Ranges;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
-import static com.pholser.junit.quickcheck.internal.Ranges.*;
-import static com.pholser.junit.quickcheck.internal.Reflection.*;
 import static java.math.BigInteger.*;
 import static java.util.function.Function.*;
+
+import static com.pholser.junit.quickcheck.internal.Ranges.*;
+import static com.pholser.junit.quickcheck.internal.Reflection.*;
 
 /**
  * <p>Produces values of type {@link BigInteger}.</p>
@@ -67,10 +68,6 @@ public class BigIntegerGenerator extends IntegralGenerator<BigInteger> {
      * {@link com.pholser.junit.quickcheck.generator.GenerationStatus#size()}.</p>
 
      * @param range annotation that gives the range's constraints
-     * @throws NumberFormatException if the range's values cannot be converted
-     * to {@code BigInteger}
-     * @throws IllegalArgumentException if the range's values specify a
-     * nonsensical range
      */
     public void configure(InRange range) {
         if (!defaultValueOf(InRange.class, "min").equals(range.min()))

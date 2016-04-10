@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -27,20 +27,18 @@ package com.pholser.junit.quickcheck.generator;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.Collection;
-import java.util.Map;
-
-import com.pholser.junit.quickcheck.Property;
 
 import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.*;
 
 /**
- * <p>Mark a parameter of a {@link Property} method with this annotation to
- * constrain the size of values generated for the parameter.</p>
+ * <p>Mark a parameter of a {@link com.pholser.junit.quickcheck.Property}
+ * method with this annotation to constrain the size of values generated for
+ * the parameter.</p>
  *
  * <p>This annotation is recognized on array parameters and parameters of type
- * {@link Collection#size() Collection} and {@link Map#size() Map}.</p>
+ * {@link java.util.Collection#size() Collection} and {@link
+ * java.util.Map#size() Map}.</p>
  */
 @Target({ PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE })
 @Retention(RUNTIME)

@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -25,7 +25,6 @@
 
 package com.pholser.junit.quickcheck.internal;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
@@ -51,10 +50,11 @@ import org.javaruntype.type.TypeParameter;
 import org.javaruntype.type.Types;
 import org.javaruntype.type.WildcardTypeParameter;
 
-import static com.pholser.junit.quickcheck.internal.Items.*;
-import static com.pholser.junit.quickcheck.internal.Reflection.*;
 import static java.lang.String.*;
 import static java.util.Collections.*;
+
+import static com.pholser.junit.quickcheck.internal.Items.*;
+import static com.pholser.junit.quickcheck.internal.Reflection.*;
 import static org.javaruntype.type.Types.*;
 
 public class ParameterTypeContext {
@@ -110,6 +110,16 @@ public class ParameterTypeContext {
         this.declarerName = declarerName;
         this.token = token;
         this.typeVariables = typeVariables;
+    }
+
+    public ParameterTypeContext(Type type) {
+        this(
+            type.getTypeName(),
+            null,
+            type.getTypeName(),
+            Types.forJavaLangReflectType(type),
+            emptyMap()
+        );
     }
 
     private static Map<String, org.javaruntype.type.Type<?>> toTokens(
@@ -223,10 +233,6 @@ public class ParameterTypeContext {
         return unmodifiableList(explicits);
     }
 
-    public boolean annotatedWith(Class<? extends Annotation> annotationType) {
-        return parameterType.getAnnotation(annotationType) != null;
-    }
-
     public boolean isArray() {
         return token.isArray();
     }
@@ -234,15 +240,24 @@ public class ParameterTypeContext {
     public ParameterTypeContext arrayComponentContext() {
         @SuppressWarnings("unchecked")
         org.javaruntype.type.Type<?> component = arrayComponentOf((org.javaruntype.type.Type<Object[]>) token);
-        AnnotatedType annotatedComponent = ((AnnotatedArrayType) parameterType).getAnnotatedGenericComponentType();
+        if (parameterType != null) {
+            AnnotatedType annotatedComponent = ((AnnotatedArrayType) parameterType).getAnnotatedGenericComponentType();
+            return new ParameterTypeContext(
+                annotatedComponent.getType().getTypeName(),
+                annotatedComponent,
+                parameterType.getType().getTypeName(),
+                component,
+                typeVariables)
+                .annotate(annotatedComponent)
+                .allowMixedTypes(true);
+        }
         return new ParameterTypeContext(
-            annotatedComponent.getType().getTypeName(),
-            annotatedComponent,
-            parameterType.getType().getTypeName(),
+            component.getName(),
+            null,
+            token.getName(),
             component,
-            typeVariables)
-            .annotate(annotatedComponent)
-            .allowMixedTypes(true);
+            typeVariables
+        ).allowMixedTypes(true);
     }
 
     public Class<?> getRawClass() {
@@ -269,53 +284,88 @@ public class ParameterTypeContext {
                     ? annotatedTypeParameters.get(i)
                     : zilch();
 
-            if (p instanceof StandardTypeParameter<?>) {
-                typeParameterContexts.add(
-                    new ParameterTypeContext(
-                        p.getType().getName(),
-                        a,
-                        annotatedType().getType().getTypeName(),
-                        p.getType(),
-                        typeVariables)
-                    .allowMixedTypes(!(a instanceof TypeVariable))
-                    .annotate(a));
-            } else if (p instanceof WildcardTypeParameter) {
-                typeParameterContexts.add(
-                    new ParameterTypeContext(
-                        "Zilch",
-                        a,
-                        annotatedType().getType().getTypeName(),
-                        Types.forJavaLangReflectType(Zilch.class),
-                        typeVariables)
-                    .allowMixedTypes(true)
-                    .annotate(a));
-            } else if (p instanceof ExtendsTypeParameter<?>) {
-                typeParameterContexts.add(
-                    new ParameterTypeContext(
-                        p.getType().getName(),
-                        annotatedComponentTypes(a).get(0),
-                        annotatedType().getType().getTypeName(),
-                        p.getType(),
-                        typeVariables)
-                    .allowMixedTypes(false)
-                    .annotate(a));
-            } else {
+            if (p instanceof StandardTypeParameter<?>)
+                addStandardTypeParameterContext(typeParameterContexts, p, a);
+            else if (p instanceof WildcardTypeParameter)
+                addWildcardTypeParameterContext(typeParameterContexts, a);
+            else if (p instanceof ExtendsTypeParameter<?>)
+                addExtendsTypeParameterContext(typeParameterContexts, p, a);
+            else {
                 // must be "? super X"
-                Set<org.javaruntype.type.Type<?>> supertypes = supertypes(p.getType());
-                org.javaruntype.type.Type<?> choice = choose(supertypes, random);
-                typeParameterContexts.add(
-                    new ParameterTypeContext(
-                        p.getType().getName(),
-                        annotatedComponentTypes(a).get(0),
-                        annotatedType().getType().getTypeName(),
-                        choice,
-                        typeVariables)
-                    .allowMixedTypes(false)
-                    .annotate(a));
+                addSuperTypeParameterContext(random, typeParameterContexts, p, a);
             }
         }
 
         return typeParameterContexts;
+    }
+
+    private void addStandardTypeParameterContext(
+        List<ParameterTypeContext> typeParameterContexts,
+        TypeParameter<?> p,
+        AnnotatedType a) {
+
+        typeParameterContexts.add(
+            new ParameterTypeContext(
+                p.getType().getName(),
+                a,
+                annotatedType().getType().getTypeName(),
+                p.getType(),
+                typeVariables)
+            .allowMixedTypes(!(a instanceof TypeVariable))
+            .annotate(a));
+    }
+
+    private void addWildcardTypeParameterContext(
+        List<ParameterTypeContext> typeParameterContexts,
+        AnnotatedType a) {
+
+        if (annotatedType() != null) {
+            typeParameterContexts.add(
+                new ParameterTypeContext(
+                    "Zilch",
+                    a,
+                    annotatedType().getType().getTypeName(),
+                    Types.forJavaLangReflectType(Zilch.class),
+                    typeVariables)
+                    .allowMixedTypes(true)
+                    .annotate(a));
+        }
+    }
+
+    private void addExtendsTypeParameterContext(
+        List<ParameterTypeContext> typeParameterContexts,
+        TypeParameter<?> p,
+        AnnotatedType a) {
+
+        typeParameterContexts.add(
+            new ParameterTypeContext(
+                p.getType().getName(),
+                annotatedComponentTypes(a).get(0),
+                annotatedType().getType().getTypeName(),
+                p.getType(),
+                typeVariables)
+                .allowMixedTypes(false)
+                .annotate(a));
+    }
+
+    private void addSuperTypeParameterContext(
+        SourceOfRandomness random,
+        List<ParameterTypeContext> typeParameterContexts,
+        TypeParameter<?> p,
+        AnnotatedType a) {
+
+        Set<org.javaruntype.type.Type<?>> supertypes = supertypes(p.getType());
+        org.javaruntype.type.Type<?> choice = choose(supertypes, random);
+
+        typeParameterContexts.add(
+            new ParameterTypeContext(
+                p.getType().getName(),
+                annotatedComponentTypes(a).get(0),
+                annotatedType().getType().getTypeName(),
+                choice,
+                typeVariables)
+                .allowMixedTypes(false)
+                .annotate(a));
     }
 
     private static AnnotatedType zilch() {

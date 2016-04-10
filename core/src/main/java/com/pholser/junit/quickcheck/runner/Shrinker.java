@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -28,6 +28,7 @@ package com.pholser.junit.quickcheck.runner;
 import java.util.List;
 import java.util.Stack;
 
+import com.pholser.junit.quickcheck.MinimalCounterexampleHook;
 import com.pholser.junit.quickcheck.internal.generator.PropertyParameterGenerationContext;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.TestClass;
@@ -39,6 +40,8 @@ class Shrinker {
     private final int maxShrinks;
     private final int maxShrinkDepth;
     private final int maxShrinkTime;
+    private final MinimalCounterexampleHook onMinimalCounterexample;
+
     private int shrinkAttempts;
     private long shrinkTimeout;
 
@@ -48,7 +51,8 @@ class Shrinker {
         AssertionError failure,
         int maxShrinks,
         int maxShrinkDepth,
-        int maxShrinkTime) {
+        int maxShrinkTime,
+        MinimalCounterexampleHook onMinimalCounterexample) {
 
         this.method = method;
         this.testClass = testClass;
@@ -56,41 +60,57 @@ class Shrinker {
         this.maxShrinks = maxShrinks;
         this.maxShrinkDepth = maxShrinkDepth;
         this.maxShrinkTime = maxShrinkTime;
+        this.onMinimalCounterexample = onMinimalCounterexample;
     }
 
-    void shrink(List<PropertyParameterGenerationContext> params, Object[] args)
+    void shrink(
+        List<PropertyParameterGenerationContext> params,
+        Object[] args,
+        long[] initialSeeds)
         throws Throwable {
 
         Stack<ShrinkNode> nodes = new Stack<>();
-        ShrinkNode smallestFailure = ShrinkNode.root(method, testClass, params, args);
-        smallestFailure.shrinks().forEach(nodes::push);
+        ShrinkNode counterexample =
+            ShrinkNode.root(method, testClass, params, args, initialSeeds);
+        counterexample.shrinks().forEach(nodes::push);
 
         shrinkTimeout = System.currentTimeMillis() + maxShrinkTime;
 
         while (shouldContinueShrinking(nodes)) {
             ShrinkNode next = nodes.pop();
-            if (next.mightBePast(smallestFailure)) {
+            if (next.mightBePast(counterexample)) {
                 boolean result = next.verifyProperty();
                 ++shrinkAttempts;
 
                 if (!result) {
-                    smallestFailure = next;
+                    counterexample = next;
 
                     List<ShrinkNode> shrinks = next.shrinks();
                     if (shrinks.isEmpty())
-                        smallestFailure = smallestFailure.advanceToNextArg();
+                        counterexample = counterexample.advanceToNextArg();
                     else
                         shrinks.forEach(nodes::push);
                 }
 
                 if (nodes.empty()) {
-                    smallestFailure = smallestFailure.advanceToNextArg();
-                    smallestFailure.shrinks().forEach(nodes::push);
+                    counterexample = counterexample.advanceToNextArg();
+                    counterexample.shrinks().forEach(nodes::push);
                 }
             }
         }
 
-        throw smallestFailure.fail(failure);
+        handleMinimalCounterexample(counterexample);
+        throw counterexample.fail(failure);
+    }
+
+    private void handleMinimalCounterexample(ShrinkNode counterexample) {
+        Runnable repeat = () -> {
+            try {
+                counterexample.verifyProperty();
+            } catch (Throwable e) {}
+        };
+
+        onMinimalCounterexample.handle(counterexample.getArgs(), repeat);
     }
 
     private boolean shouldContinueShrinking(Stack<ShrinkNode> nodes) {

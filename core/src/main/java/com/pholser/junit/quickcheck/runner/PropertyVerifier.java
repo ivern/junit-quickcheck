@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -26,6 +26,7 @@
 package com.pholser.junit.quickcheck.runner;
 
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.junit.AssumptionViolatedException;
@@ -40,22 +41,25 @@ import static java.util.Arrays.*;
 class PropertyVerifier extends BlockJUnit4ClassRunner {
     private final FrameworkMethod method;
     private final Object[] args;
+    private final long[] initialSeeds;
     private final Consumer<Void> onSuccess;
     private final Consumer<AssumptionViolatedException> onAssumptionViolated;
-    private final Consumer<AssertionError> onFailure;
+    private final BiConsumer<AssertionError, Runnable> onFailure;
 
     PropertyVerifier(
         TestClass clazz,
         FrameworkMethod method,
         Object[] args,
+        long[] initialSeeds,
         Consumer<Void> onSuccess,
         Consumer<AssumptionViolatedException> onAssumptionViolated,
-        Consumer<AssertionError> onFailure)
+        BiConsumer<AssertionError, Runnable> onFailure)
         throws InitializationError {
 
         super(clazz.getJavaClass());
         this.method = method;
         this.args = args;
+        this.initialSeeds = initialSeeds;
         this.onSuccess = onSuccess;
         this.onAssumptionViolated = onAssumptionViolated;
         this.onFailure = onFailure;
@@ -75,7 +79,12 @@ class PropertyVerifier extends BlockJUnit4ClassRunner {
                 } catch (AssumptionViolatedException e) {
                     onAssumptionViolated.accept(e);
                 } catch (AssertionError e) {
-                    onFailure.accept(e);
+                    Runnable repeat = () -> {
+                        try {
+                            statement.evaluate();
+                        } catch (Throwable throwable) {}
+                    };
+                    onFailure.accept(e, repeat);
                 } catch (Throwable e) {
                     reportErrorWithArguments(e);
                 }
@@ -87,10 +96,13 @@ class PropertyVerifier extends BlockJUnit4ClassRunner {
         // do nothing
     }
 
-    @Override protected Statement methodInvoker(FrameworkMethod method, Object test) {
+    @Override protected Statement methodInvoker(
+        FrameworkMethod frameworkMethod,
+        Object test) {
+
         return new Statement() {
             @Override public void evaluate() throws Throwable {
-                method.invokeExplosively(test, args);
+                frameworkMethod.invokeExplosively(test, args);
             }
         };
     }
@@ -98,9 +110,10 @@ class PropertyVerifier extends BlockJUnit4ClassRunner {
     private void reportErrorWithArguments(Throwable e) {
         throw new AssertionError(
             String.format(
-                "Unexpected error in property %s with args %s",
+                "Unexpected error in property %s with args %s and initial seeds %s",
                 method.getName(),
-                asList(args)),
+                asList(args),
+                asList(initialSeeds)),
             e);
     }
 }

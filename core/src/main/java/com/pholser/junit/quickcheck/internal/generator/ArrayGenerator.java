@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -34,16 +34,18 @@ import java.util.stream.Collectors;
 
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
+import com.pholser.junit.quickcheck.generator.Generators;
 import com.pholser.junit.quickcheck.generator.Shrink;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
+import static java.util.stream.StreamSupport.*;
+
 import static com.pholser.junit.quickcheck.internal.Lists.*;
-import static com.pholser.junit.quickcheck.internal.Ranges.Type.*;
 import static com.pholser.junit.quickcheck.internal.Ranges.*;
+import static com.pholser.junit.quickcheck.internal.Ranges.Type.*;
 import static com.pholser.junit.quickcheck.internal.Reflection.*;
 import static com.pholser.junit.quickcheck.internal.Sequences.*;
-import static java.util.stream.StreamSupport.*;
 
 public class ArrayGenerator extends Generator<Object> {
     private final Class<?> componentType;
@@ -62,11 +64,11 @@ public class ArrayGenerator extends Generator<Object> {
      * Tells this generator to produce values with a length within a specified
      * minimum and/or maximum, inclusive, chosen with uniform distribution.
      *
-     * @param lengthRange annotation that gives the length constraints
+     * @param size annotation that gives the length constraints
      */
-    public void configure(Size lengthRange) {
-        this.lengthRange = lengthRange;
-        checkRange(INTEGRAL, lengthRange.min(), lengthRange.max());
+    public void configure(Size size) {
+        this.lengthRange = size;
+        checkRange(INTEGRAL, size.min(), size.max());
     }
 
     @Override public Object generate(SourceOfRandomness random, GenerationStatus status) {
@@ -102,16 +104,18 @@ public class ArrayGenerator extends Generator<Object> {
         return shrinks;
     }
 
-    @Override public void provideRepository(GeneratorRepository provided) {
-        super.provideRepository(provided);
+    @Override public void provide(Generators provided) {
+        super.provide(provided);
 
-        component.provideRepository(provided);
+        component.provide(provided);
     }
 
     @Override public void configure(AnnotatedType annotatedType) {
         super.configure(annotatedType);
 
-        component.configure(annotatedComponentTypes(annotatedType).get(0));
+        List<AnnotatedType> annotated = annotatedComponentTypes(annotatedType);
+        if (!annotated.isEmpty())
+            component.configure(annotated.get(0));
     }
 
     private int length(SourceOfRandomness random, GenerationStatus status) {

@@ -1,7 +1,7 @@
 /*
  The MIT License
 
- Copyright (c) 2010-2015 Paul R. Holser, Jr.
+ Copyright (c) 2010-2016 Paul R. Holser, Jr.
 
  Permission is hereby granted, free of charge, to any person obtaining
  a copy of this software and associated documentation files (the
@@ -34,9 +34,10 @@ import java.util.Random;
 
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
-import static com.pholser.junit.quickcheck.internal.Reflection.*;
 import static java.lang.System.*;
 import static java.lang.reflect.Proxy.*;
+
+import static com.pholser.junit.quickcheck.internal.Reflection.*;
 
 /**
  * Helper class for creating instances of "functional interfaces".
